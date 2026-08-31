@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Creador de Skins 4D para Minecraft (Móvil)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
+        .container { background: #16213e; max-width: 480px; width: 100%; padding: 24px 20px 30px; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; border: 1px solid #0f3460; }
+        h1 { color: #e94560; font-size: 1.8rem; margin-bottom: 6px; font-weight: 800; letter-spacing: -0.5px; }
+        .sub { color: #a8b2d1; font-size: 0.9rem; margin-bottom: 20px; border-bottom: 1px solid #2a3a5e; padding-bottom: 12px; }
+        .upload-area { background: #0a0f1f; border: 2px dashed #4a5a82; border-radius: 20px; padding: 20px 10px; margin-bottom: 18px; transition: 0.3s; position: relative; cursor: pointer; }
+        .upload-area.has-image { border-color: #4ade80; background: #0f1a2e; }
+        .upload-label { display: block; color: #ccd6f6; font-weight: 600; padding: 10px; }
+        #fileInput { display: none; }
+        .preview-box { width: 128px; height: 128px; margin: 10px auto; background: #0d1117; border-radius: 16px; border: 2px solid #2a3a5e; display: flex; align-items: center; justify-content: center; overflow: hidden; image-rendering: pixelated; }
+        .preview-box img { width: 100%; height: 100%; object-fit: contain; display: none; }
+        .placeholder-text { color: #4a5a82; font-size: 0.8rem; padding: 8px; }
+        #fileInfo { color: #8892b0; font-size: 0.85rem; margin: 8px 0 4px; min-height: 24px; }
+        .btn-generate { background: #e94560; color: white; border: none; font-size: 1.3rem; font-weight: 700; padding: 16px 20px; border-radius: 60px; width: 100%; cursor: pointer; transition: 0.2s; box-shadow: 0 6px 0 #b01a3a; margin: 10px 0 14px; touch-action: manipulation; }
+        .btn-generate:active { transform: translateY(4px); box-shadow: 0 2px 0 #b01a3a; }
+        .btn-generate:disabled { opacity: 0.5; transform: translateY(4px); box-shadow: 0 2px 0 #b01a3a; pointer-events: none; }
+        .status-box { background: #0d1117; border-radius: 14px; padding: 14px; margin: 12px 0; color: #ccd6f6; font-size: 0.9rem; min-height: 60px; text-align: left; border-left: 4px solid #e94560; word-break: break-all; line-height: 1.6; max-height: 150px; overflow-y: auto; }
+        .status-box.success { border-left-color: #4ade80; }
+        .status-box.error { border-left-color: #f87171; }
+        .footer { color: #4a5a82; font-size: 0.7rem; margin-top: 20px; border-top: 1px solid #1f2a44; padding-top: 16px; }
+        .btn-reset { background: transparent; border: 1px solid #4a5a82; color: #a8b2d1; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; cursor: pointer; margin-top: 6px; }
+        .progress-ring { display: none; width: 30px; height: 30px; border: 4px solid #2a3a5e; border-top: 4px solid #e94560; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 6px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .download-hint { background: #1f2a44; padding: 10px; border-radius: 12px; color: #a8b2d1; font-size: 0.85rem; margin-top: 8px; display: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🧊 4D SKIN</h1>
+    <div class="sub">Convierte skins normales a volumétricas para Bedrock</div>
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-label">
+            <span style="font-size:2rem;">📤</span><br>
+            Toca para seleccionar tu skin (PNG)
+            <input type="file" id="fileInput" accept="image/png,image/jpeg">
+        </div>
+        <div class="preview-box" id="previewBox">
+            <span class="placeholder-text" id="placeholderText">Vista previa</span>
+            <img id="previewImg" alt="preview">
+        </div>
+        <div id="fileInfo">Ningún archivo cargado</div>
+    </div>
+    <button class="btn-generate" id="btnGenerate" disabled>⚡ Generar Skin 4D y .mcpack</button>
+    <div class="progress-ring" id="loader"></div>
+    <div class="status-box" id="statusBox">✨ Esperando tu skin...</div>
+    <div class="download-hint" id="downloadHint">✅ ¡Listo! Toca el archivo descargado y ábrelo con Minecraft.</div>
+    <button class="btn-reset" id="btnReset">↻ Reiniciar</button>
+    <div class="footer">100% en tu navegador · No se suben archivos a ningún servidor</div>
+</div>
+<script>
+  (function() {
+    const fileInput = document.getElementById('fileInput');
+    const previewImg = document.getElementById('previewImg');
+    const placeholderText = document.getElementById('placeholderText');
+    const fileInfo = document.getElementById('fileInfo');
+    const statusBox = document.getElementById('statusBox');
+    const btnGenerate = document.getElementById('btnGenerate');
+    const btnReset = document.getElementById('btnReset');
+    const loader = document.getElementById('loader');
+    const downloadHint = document.getElementById('downloadHint');
+    const uploadArea = document.getElementById('uploadArea');
+    let selectedFile = null, imageDataURL = null;
+
+    function log(msg, type = 'info') {
+        statusBox.textContent = msg;
+        statusBox.className = 'status-box';
+        if (type === 'success') statusBox.classList.add('success');
+        if (type === 'error') statusBox.classList.add('error');
+    }
+    function uuid() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { let r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { log('❌ No es imagen.', 'error'); return; }
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            imageDataURL = ev.target.result;
+            const img = new Image();
+            img.onload = function() {
+                previewImg.src = imageDataURL;
+                previewImg.style.display = 'block';
+                placeholderText.style.display = 'none';
+                uploadArea.classList.add('has-image');
+                fileInfo.textContent = `📄 ${file.name} (${img.width}x${img.height})`;
+                if (img.width !== 64 || img.height !== 64) log(`⚠️ Mide ${img.width}x${img.height}. Debe ser 64x64.`, 'info');
+                else log('✅ Skin cargada. Lista.', 'success');
+                btnGenerate.disabled = false;
+                downloadHint.style.display = 'none';
+            };
+            img.src = imageDataURL;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    btnGenerate.addEventListener('click', function() {
+        if (!imageDataURL) { log('❌ Carga una skin primero.', 'error'); return; }
+        btnGenerate.disabled = true;
+        loader.style.display = 'block';
+        log('⏳ Empaquetando...', 'info');
+        setTimeout(() => {
+            try {
+                const geometry = { "format_version": "1.16.0", "minecraft:geometry": [{ "description": { "identifier": "geometry.humanoid.custom", "texture_width": 64, "texture_height": 64, "visible_bounds_width": 2, "visible_bounds_height": 2.5, "visible_bounds_offset": [0, 0.75, 0] }, "bones": [ { "name": "body", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 12, -2], "size": [8, 12, 4], "uv": [16, 16] }] }, { "name": "jacket", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 12, -2], "size": [8, 12, 4], "uv": [16, 16], "inflate": 0.5 }] }, { "name": "head", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 24, -4], "size": [8, 8, 8], "uv": [0, 0] }] }, { "name": "hat", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 24, -4], "size": [8, 8, 8], "uv": [32, 0], "inflate": 0.5 }] }, { "name": "left_arm", "pivot": [-5, 22, 0], "cubes": [{ "origin": [-8, 12, -2], "size": [4, 12, 4], "uv": [40, 16] }] }, { "name": "left_sleeve", "pivot": [-5, 22, 0], "cubes": [{ "origin": [-8, 12, -2], "size": [4, 12, 4], "uv": [40, 16], "inflate": 0.5 }] }, { "name": "right_arm", "pivot": [5, 22, 0], "cubes": [{ "origin": [4, 12, -2], "size": [4, 12, 4], "uv": [40, 32] }] }, { "name": "right_sleeve", "pivot": [5, 22, 0], "cubes": [{ "origin": [4, 12, -2], "size": [4, 12, 4], "uv": [40, 32], "inflate": 0.5 }] }, { "name": "left_leg", "pivot": [-2, 12, 0], "cubes": [{ "origin": [-4, 0, -2], "size": [4, 12, 4], "uv": [0, 16] }] }, { "name": "left_pants", "pivot": [-2, 12, 0], "cubes": [{ "origin": [-4, 0, -2], "size": [4, 12, 4], "uv": [0, 16], "inflate": 0.5 }] }, { "name": "right_leg", "pivot": [2, 12, 0], "cubes": [{ "origin": [0, 0, -2], "size": [4, 12, 4], "uv": [0, 32] }] }, { "name": "right_pants", "pivot": [2, 12, 0], "cubes": [{ "origin": [0, 0, -2], "size": [4, 12, 4], "uv": [0, 32], "inflate": 0.5 }] } ] }] };
+                                  const manifest = { "format_version": 2, "header": { "description": "Skin 4D", "name": "Skin 4D", "uuid": uuid(), "version": [1,0,0], "min_engine_version": [1,16,0] }, "modules": [{ "type": "skin_pack", "uuid": uuid(), "version": [1,0,0] }] };
+                    const skinsJson = { "skins": [{ "localization_name": "MiSkin4D", "geometry": "geometry.humanoid.custom", "texture": "skin.png", "type": "free" }], "geometry": "geometry.json", "serialize_name": "Skin4D", "localization_name": "Skin4D" };
+                    const zip = new JSZip();
+                    zip.file("geometry.json", JSON.stringify(geometry, null, 2));
+                    zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+                    zip.file("skins.json", JSON.stringify(skinsJson, null, 2));
+                    const byteString = atob(imageDataURL.split(',')[1]);
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                    zip.file("skin.png", new Blob([ab], { type: 'image/png' }));
+                    zip.generateAsync({ type: "blob" }).then(function(content) {
+                        const nombre = selectedFile ? selectedFile.name.replace(/\.[^/.]+$/, "") : "skin4d";
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(content);
+                        link.download = `4D_${nombre}.mcpack`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        log('🎉 ¡Generada! Busca el .mcpack en tus descargas.', 'success');
+                        downloadHint.style.display = 'block';
+                        btnGenerate.disabled = false;
+                        loader.style.display = 'none';
+                    });
+                } catch (e) { log(`❌ Error: ${e.message}`, 'error'); btnGenerate.disabled = false; loader.style.display = 'none'; }
+            }, 100);
+        });
+
+        btnReset.addEventListener('click', function() {
+            selectedFile = null; imageDataURL = null; fileInput.value = ''; previewImg.style.display = 'none'; placeholderText.style.display = 'block'; uploadArea.classList.remove('has-image'); fileInfo.textContent = 'Ningún archivo cargado'; btnGenerate.disabled = true; downloadHint.style.display = 'none'; loader.style.display = 'none'; log('✨ Reiniciado.', 'info');
+        });
+        uploadArea.addEventListener('click', function(e) { if (e.target.tagName !== 'INPUT') fileInput.click(); });
+        log('📱 Listo. Toca para cargar tu skin.', 'info');
+    })();
+</script>
+</body>
+</html>
