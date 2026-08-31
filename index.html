@@ -3,124 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Creador de Skins 4D para Minecraft (Móvil)</title>
+    <title>Editor 3D de Skins + 4D para Minecraft</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        body { background: #1a1a2e; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
-        .container { background: #16213e; max-width: 480px; width: 100%; padding: 24px 20px 30px; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; border: 1px solid #0f3460; }
-        h1 { color: #e94560; font-size: 1.8rem; margin-bottom: 6px; font-weight: 800; letter-spacing: -0.5px; }
-        .sub { color: #a8b2d1; font-size: 0.9rem; margin-bottom: 20px; border-bottom: 1px solid #2a3a5e; padding-bottom: 12px; }
-        .upload-area { background: #0a0f1f; border: 2px dashed #4a5a82; border-radius: 20px; padding: 20px 10px; margin-bottom: 18px; transition: 0.3s; position: relative; cursor: pointer; }
-        .upload-area.has-image { border-color: #4ade80; background: #0f1a2e; }
-        .upload-label { display: block; color: #ccd6f6; font-weight: 600; padding: 10px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: #0d1117; min-height: 100vh; display: flex; justify-content: center; padding: 10px; }
+        .container { background: #161b22; max-width: 520px; width: 100%; padding: 16px; border-radius: 28px; border: 1px solid #30363d; }
+        h1 { color: #f0883e; font-size: 1.5rem; text-align: center; }
+        .sub { color: #8b949e; text-align: center; font-size: 0.8rem; margin-bottom: 12px; }
+        
+        .upload-area { background: #0d1117; border: 2px dashed #30363d; border-radius: 16px; padding: 10px; text-align: center; cursor: pointer; margin-bottom: 10px; }
+        .upload-area.has-image { border-color: #58a6ff; }
         #fileInput { display: none; }
-        .preview-box { width: 128px; height: 128px; margin: 10px auto; background: #0d1117; border-radius: 16px; border: 2px solid #2a3a5e; display: flex; align-items: center; justify-content: center; overflow: hidden; image-rendering: pixelated; }
-        .preview-box img { width: 100%; height: 100%; object-fit: contain; display: none; }
-        .placeholder-text { color: #4a5a82; font-size: 0.8rem; padding: 8px; }
-        #fileInfo { color: #8892b0; font-size: 0.85rem; margin: 8px 0 4px; min-height: 24px; }
-        .btn-generate { background: #e94560; color: white; border: none; font-size: 1.3rem; font-weight: 700; padding: 16px 20px; border-radius: 60px; width: 100%; cursor: pointer; transition: 0.2s; box-shadow: 0 6px 0 #b01a3a; margin: 10px 0 14px; touch-action: manipulation; }
-        .btn-generate:active { transform: translateY(4px); box-shadow: 0 2px 0 #b01a3a; }
-        .btn-generate:disabled { opacity: 0.5; transform: translateY(4px); box-shadow: 0 2px 0 #b01a3a; pointer-events: none; }
-        .status-box { background: #0d1117; border-radius: 14px; padding: 14px; margin: 12px 0; color: #ccd6f6; font-size: 0.9rem; min-height: 60px; text-align: left; border-left: 4px solid #e94560; word-break: break-all; line-height: 1.6; max-height: 150px; overflow-y: auto; }
-        .status-box.success { border-left-color: #4ade80; }
-        .status-box.error { border-left-color: #f87171; }
-        .footer { color: #4a5a82; font-size: 0.7rem; margin-top: 20px; border-top: 1px solid #1f2a44; padding-top: 16px; }
-        .btn-reset { background: transparent; border: 1px solid #4a5a82; color: #a8b2d1; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; cursor: pointer; margin-top: 6px; }
-        .progress-ring { display: none; width: 30px; height: 30px; border: 4px solid #2a3a5e; border-top: 4px solid #e94560; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 6px auto; }
+        #fileInfo { color: #484f58; font-size: 0.75rem; }
+        
+        .view-3d { background: #0d1117; border-radius: 12px; padding: 8px; border: 1px solid #30363d; text-align: center; margin-bottom: 10px; }
+        #preview3d { image-rendering: pixelated; width: 100%; max-width: 280px; height: auto; background: #0d1117; }
+        
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
+        .control-group { background: #0d1117; border-radius: 10px; padding: 8px 10px; border: 1px solid #21262d; }
+        .control-group label { color: #8b949e; font-size: 0.7rem; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .control-group .part-name { color: #f0883e; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; }
+        .slider-row { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+        .slider-row input[type="range"] { flex: 1; height: 4px; -webkit-appearance: none; background: #30363d; border-radius: 2px; }
+        .slider-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #f0883e; cursor: pointer; }
+        .slider-row span { color: #c9d1d9; font-size: 0.7rem; min-width: 28px; text-align: right; }
+        .slider-row .slider-label { color: #484f58; font-size: 0.65rem; min-width: 14px; }
+        
+        .tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 8px 0; }
+        .tools button { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 14px; border-radius: 16px; font-size: 0.75rem; cursor: pointer; }
+        .tools button.active { background: #f0883e; color: #0d1117; border-color: #f0883e; }
+        
+        .btn-generate { background: #f0883e; color: #0d1117; border: none; font-size: 1.1rem; font-weight: 700; padding: 12px; border-radius: 40px; width: 100%; cursor: pointer; margin: 8px 0; }
+        .btn-generate:disabled { opacity: 0.4; pointer-events: none; }
+        .btn-reset { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; }
+        
+        .status-box { background: #0d1117; border-radius: 10px; padding: 10px; color: #8b949e; font-size: 0.8rem; min-height: 40px; border-left: 4px solid #f0883e; margin: 8px 0; overflow-y: auto; max-height: 60px; }
+        .status-box.success { border-left-color: #3fb950; }
+        .status-box.error { border-left-color: #f85149; }
+        .progress-ring { display: none; width: 24px; height: 24px; border: 3px solid #30363d; border-top: 3px solid #f0883e; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 4px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .download-hint { background: #1f2a44; padding: 10px; border-radius: 12px; color: #a8b2d1; font-size: 0.85rem; margin-top: 8px; display: none; }
+        .footer { color: #484f58; text-align: center; font-size: 0.65rem; margin-top: 10px; }
+        .download-hint { background: #1c2333; padding: 8px; border-radius: 10px; color: #8b949e; font-size: 0.8rem; display: none; text-align: center; }
+        
+        /* Scroll personalizado */
+        .controls::-webkit-scrollbar { width: 4px; }
+        .controls::-webkit-scrollbar-track { background: #0d1117; }
+        .controls::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+        
+        @media (max-width: 400px) { .controls { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🧊 4D SKIN</h1>
-    <div class="sub">Convierte skins normales a volumétricas para Bedrock</div>
+    <h1>🧊 Editor 3D + 4D</h1>
+    <div class="sub">Escala, infla y mueve cada parte de tu skin</div>
+    
     <div class="upload-area" id="uploadArea">
-        <div class="upload-label">
-            <span style="font-size:2rem;">📤</span><br>
-            Toca para seleccionar tu skin (PNG)
-            <input type="file" id="fileInput" accept="image/png,image/jpeg">
-        </div>
-        <div class="preview-box" id="previewBox">
-            <span class="placeholder-text" id="placeholderText">Vista previa</span>
-            <img id="previewImg" alt="preview">
-        </div>
-        <div id="fileInfo">Ningún archivo cargado</div>
+        <span style="font-size:1.3rem;">📤</span> Toca para cargar skin (PNG)
+        <input type="file" id="fileInput" accept="image/png">
+        <div id="fileInfo">Ninguna skin cargada</div>
     </div>
+    
+    <div class="view-3d">
+        <canvas id="preview3d" width="280" height="280"></canvas>
+        <div style="color:#484f58; font-size:0.65rem;">Vista previa 3D · Los cambios se actualizan en tiempo real</div>
+    </div>
+    
+    <div class="controls" id="controlsContainer">
+        <!-- Generado por JS -->
+    </div>
+    
+    <div class="tools">
+        <button id="resetAllBtn" class="active">↺ Resetear todo</button>
+        <button id="applyToAllBtn">📌 Aplicar a todas las partes</button>
+    </div>
+    
     <button class="btn-generate" id="btnGenerate" disabled>⚡ Generar Skin 4D y .mcpack</button>
     <div class="progress-ring" id="loader"></div>
-    <div class="status-box" id="statusBox">✨ Esperando tu skin...</div>
+    <div class="status-box" id="statusBox">✨ Carga una skin para empezar a editar</div>
     <div class="download-hint" id="downloadHint">✅ ¡Listo! Toca el archivo descargado y ábrelo con Minecraft.</div>
-    <button class="btn-reset" id="btnReset">↻ Reiniciar</button>
-    <div class="footer">100% en tu navegador · No se suben archivos a ningún servidor</div>
+    
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:6px;">
+        <button class="btn-reset" id="btnReset">↻ Reiniciar app</button>
+    </div>
+    <div class="footer">100% local · No se suben archivos</div>
 </div>
 <script>
-  (function() {
+    (function() {
+    // ===== ELEMENTOS =====
+    const canvas = document.getElementById('preview3d');
+    const ctx = canvas.getContext('2d');
     const fileInput = document.getElementById('fileInput');
-    const previewImg = document.getElementById('previewImg');
-    const placeholderText = document.getElementById('placeholderText');
     const fileInfo = document.getElementById('fileInfo');
+    const uploadArea = document.getElementById('uploadArea');
     const statusBox = document.getElementById('statusBox');
     const btnGenerate = document.getElementById('btnGenerate');
     const btnReset = document.getElementById('btnReset');
+    const btnResetAll = document.getElementById('resetAllBtn');
+    const btnApplyAll = document.getElementById('applyToAllBtn');
     const loader = document.getElementById('loader');
     const downloadHint = document.getElementById('downloadHint');
-    const uploadArea = document.getElementById('uploadArea');
-    let selectedFile = null, imageDataURL = null;
-
+    const controlsContainer = document.getElementById('controlsContainer');
+    
+    // ===== ESTADO =====
+    let imageDataURL = null;
+    let selectedFile = null;
+    let skinImage = null; // Imagen original cargada
+    
+    // ===== PARTES DEL MODELO =====
+    const parts = {
+        head: { name: 'Cabeza', x: 0, y: 24, z: 0, w: 8, h: 8, d: 8, inflate: 0, scale: 1, uv: [0, 0] },
+        hat: { name: 'Sombrero', x: 0, y: 24, z: 0, w: 8, h: 8, d: 8, inflate: 0.5, scale: 1, uv: [32, 0] },
+        body: { name: 'Cuerpo', x: 0, y: 12, z: 0, w: 8, h: 12, d: 4, inflate: 0, scale: 1, uv: [16, 16] },
+        jacket: { name: 'Chaqueta', x: 0, y: 12, z: 0, w: 8, h: 12, d: 4, inflate: 0.5, scale: 1, uv: [16, 16] },
+        left_arm: { name: 'Brazo Izq', x: -5, y: 22, z: 0, w: 4, h: 12, d: 4, inflate: 0, scale: 1, uv: [40, 16] },
+        left_sleeve: { name: 'Manga Izq', x: -5, y: 22, z: 0, w: 4, h: 12, d: 4, inflate: 0.5, scale: 1, uv: [40, 16] },
+        right_arm: { name: 'Brazo Der', x: 5, y: 22, z: 0, w: 4, h: 12, d: 4, inflate: 0, scale: 1, uv: [40, 32] },
+        right_sleeve: { name: 'Manga Der', x: 5, y: 22, z: 0, w: 4, h: 12, d: 4, inflate: 0.5, scale: 1, uv: [40, 32] },
+        left_leg: { name: 'Pierna Izq', x: -2, y: 0, z: 0, w: 4, h: 12, d: 4, inflate: 0, scale: 1, uv: [0, 16] },
+        left_pants: { name: 'Pantalón Izq', x: -2, y: 0, z: 0, w: 4, h: 12, d: 4, inflate: 0.5, scale: 1, uv: [0, 16] },
+        right_leg: { name: 'Pierna Der', x: 2, y: 0, z: 0, w: 4, h: 12, d: 4, inflate: 0, scale: 1, uv: [0, 32] },
+        right_pants: { name: 'Pantalón Der', x: 2, y: 0, z: 0, w: 4, h: 12, d: 4, inflate: 0.5, scale: 1, uv: [0, 32] }
+    };
+    
+    // ===== FUNCIONES =====
     function log(msg, type = 'info') {
         statusBox.textContent = msg;
         statusBox.className = 'status-box';
         if (type === 'success') statusBox.classList.add('success');
         if (type === 'error') statusBox.classList.add('error');
     }
-    function uuid() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { let r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
-
+    
+    function uuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            let r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+            return v.toString(16);
+        });
+    }
+    
+    // ===== GENERAR CONTROLES =====
+    function buildControls() {
+        controlsContainer.innerHTML = '';
+        Object.keys(parts).forEach(key => {
+            const p = parts[key];
+            const div = document.createElement('div');
+            div.className = 'control-group';
+            div.innerHTML = `
+                <div class="part-name">${p.name}</div>
+                <div class="slider-row">
+                    <span class="slider-label">📐</span>
+                    <input type="range" min="0.5" max="2" step="0.05" value="${p.scale}" data-part="${key}" data-prop="scale">
+                    <span id="scale_${key}">${p.scale.toFixed(2)}x</span>
+                </div>
+                <div class="slider-row">
+                    <span class="slider-label">💨</span>
+                    <input type="range" min="-1" max="2" step="0.05" value="${p.inflate}" data-part="${key}" data-prop="inflate">
+                    <span id="inflate_${key}">${p.inflate.toFixed(2)}</span>
+                </div>
+                <div class="slider-row">
+                    <span class="slider-label">⬆</span>
+                    <input type="range" min="-2" max="2" step="0.1" value="${p.y}" data-part="${key}" data-prop="y">
+                    <span id="y_${key}">${p.y.toFixed(1)}</span>
+                </div>
+            `;
+            controlsContainer.appendChild(div);
+        });
+        
+        // Eventos de los sliders
+        document.querySelectorAll('.control-group input[type="range"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const part = this.dataset.part;
+                const prop = this.dataset.prop;
+                const val = parseFloat(this.value);
+                parts[part][prop] = val;
+                const label = document.getElementById(`${prop}_${part}`);
+                if (label) label.textContent = val.toFixed(prop === 'scale' ? 2 : 1);
+                renderPreview();
+            });
+        });
+    }
+    buildControls();
+    
+    // ===== RENDERIZADO 3D ISOMÉTRICO =====
+    function renderPreview() {
+        if (!skinImage) {
+            // Dibujar silueta base
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, 280, 280);
+            ctx.fillStyle = '#21262d';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Carga una skin', 140, 140);
+            return;
+        }
+        
+        ctx.clearRect(0, 0, 280, 280);
+        ctx.fillStyle = '#0d1117';
+        ctx.fillRect(0, 0, 280, 280);
+        
+        // Dibujar cada parte en orden (de atrás hacia adelante)
+        const drawOrder = ['left_leg', 'left_pants', 'right_leg', 'right_pants', 'left_arm', 'left_sleeve', 'right_arm', 'right_sleeve', 'body', 'jacket', 'head', 'hat'];
+        
+        const centerX = 140;
+        const centerY = 150;
+        const scale = 5.5;
+        
+        drawOrder.forEach(key => {
+            const p = parts[key];
+            if (!p) return;
+            
+            // Calcular posición isométrica
+            const isoX = centerX + (p.x - p.z) * scale * 0.7;
+            const isoY = centerY + (p.x + p.z) * scale * 0.4 - p.y * scale * 0.8;
+            
+            const w = p.w * p.scale * scale * 0.7;
+            const h = p.h * p.scale * scale * 0.8;
+            const d = p.d * p.scale * scale * 0.4;
+            
+            // UV de la textura
+            const uv = p.uv;
+            const texW = 64;
+            const texH = 64;
+            
+            // Dibujar cara frontal
+            ctx.save();
+            ctx.translate(isoX, isoY);
+            
+            // Sombra
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 10;
+            
+            // Frontal
+            ctx.fillStyle = getTextureColor(uv[0], uv[1], w, h, p);
+            ctx.fillRect(-w/2, -h/2, w, h);
+            
+            // Lado derecho (simulado)
+            ctx.fillStyle = getTextureColor(uv[0] + 8, uv[1], d, h, p);
+            ctx.beginPath();
+            ctx.moveTo(w/2, -h/2);
+            ctx.lineTo(w/2 + d, -h/2 - d/2);
+            ctx.lineTo(w/2 + d, h/2 - d/2);
+            ctx.lineTo(w/2, h/2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Parte superior
+            ctx.fillStyle = getTextureColor(uv[0], uv[1], w, d, p);
+            ctx.beginPath();
+            ctx.moveTo(-w/2, -h/2);
+            ctx.lineTo(-w/2 + d/2, -h/2 - d/2);
+            ctx.lineTo(w/2 + d/2, -h/2 - d/2);
+            ctx.lineTo(w/2, -h/2);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+        });
+    }
+    
+    function getTextureColor(ux, uy, w, h, part) {
+        // Simular color de la textura (en producción usaría ImageData)
+        // Por ahora usamos colores base
+        const colors = {
+            head: '#ffcc88',
+            hat: '#ff8844',
+            body: '#4488ff',
+            jacket: '#2266cc',
+            left_arm: '#44aa88',
+            left_sleeve: '#228866',
+            right_arm: '#44aa88',
+            right_sleeve: '#228866',
+            left_leg: '#4466aa',
+            left_pants: '#334488',
+            right_leg: '#4466aa',
+            right_pants: '#334488'
+        };
+        return colors[part.name.toLowerCase().replace(/ /g,'_')] || '#888888';
+    }
+    
+    // ===== CARGAR SKIN =====
     fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) { log('❌ No es imagen.', 'error'); return; }
+        
         selectedFile = file;
         const reader = new FileReader();
         reader.onload = function(ev) {
             imageDataURL = ev.target.result;
             const img = new Image();
             img.onload = function() {
-                previewImg.src = imageDataURL;
-                previewImg.style.display = 'block';
-                placeholderText.style.display = 'none';
+                skinImage = img;
+                fileInfo.textContent = `✅ ${file.name} (${img.width}x${img.height})`;
                 uploadArea.classList.add('has-image');
-                fileInfo.textContent = `📄 ${file.name} (${img.width}x${img.height})`;
-                if (img.width !== 64 || img.height !== 64) log(`⚠️ Mide ${img.width}x${img.height}. Debe ser 64x64.`, 'info');
-                else log('✅ Skin cargada. Lista.', 'success');
                 btnGenerate.disabled = false;
-                downloadHint.style.display = 'none';
+                log('✅ Skin cargada. ¡Edita los controles y mira la vista 3D!', 'success');
+                renderPreview();
             };
             img.src = imageDataURL;
         };
         reader.readAsDataURL(file);
     });
-
-    btnGenerate.addEventListener('click', function() {
-        if (!imageDataURL) { log('❌ Carga una skin primero.', 'error'); return; }
-        btnGenerate.disabled = true;
-        loader.style.display = 'block';
-        log('⏳ Empaquetando...', 'info');
-        setTimeout(() => {
-            try {
-                const geometry = { "format_version": "1.16.0", "minecraft:geometry": [{ "description": { "identifier": "geometry.humanoid.custom", "texture_width": 64, "texture_height": 64, "visible_bounds_width": 2, "visible_bounds_height": 2.5, "visible_bounds_offset": [0, 0.75, 0] }, "bones": [ { "name": "body", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 12, -2], "size": [8, 12, 4], "uv": [16, 16] }] }, { "name": "jacket", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 12, -2], "size": [8, 12, 4], "uv": [16, 16], "inflate": 0.5 }] }, { "name": "head", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 24, -4], "size": [8, 8, 8], "uv": [0, 0] }] }, { "name": "hat", "pivot": [0, 24, 0], "cubes": [{ "origin": [-4, 24, -4], "size": [8, 8, 8], "uv": [32, 0], "inflate": 0.5 }] }, { "name": "left_arm", "pivot": [-5, 22, 0], "cubes": [{ "origin": [-8, 12, -2], "size": [4, 12, 4], "uv": [40, 16] }] }, { "name": "left_sleeve", "pivot": [-5, 22, 0], "cubes": [{ "origin": [-8, 12, -2], "size": [4, 12, 4], "uv": [40, 16], "inflate": 0.5 }] }, { "name": "right_arm", "pivot": [5, 22, 0], "cubes": [{ "origin": [4, 12, -2], "size": [4, 12, 4], "uv": [40, 32] }] }, { "name": "right_sleeve", "pivot": [5, 22, 0], "cubes": [{ "origin": [4, 12, -2], "size": [4, 12, 4], "uv": [40, 32], "inflate": 0.5 }] }, { "name": "left_leg", "pivot": [-2, 12, 0], "cubes": [{ "origin": [-4, 0, -2], "size": [4, 12, 4], "uv": [0, 16] }] }, { "name": "left_pants", "pivot": [-2, 12, 0], "cubes": [{ "origin": [-4, 0, -2], "size": [4, 12, 4], "uv": [0, 16], "inflate": 0.5 }] }, { "name": "right_leg", "pivot": [2, 12, 0], "cubes": [{ "origin": [0, 0, -2], "size": [4, 12, 4], "uv": [0, 32] }] }, { "name": "right_pants", "pivot": [2, 12, 0], "cubes": [{ "origin": [0, 0, -2], "size": [4, 12, 4], "uv": [0, 32], "inflate": 0.5 }] } ] }] };
-                                  const manifest = { "format_version": 2, "header": { "description": "Skin 4D", "name": "Skin 4D", "uuid": uuid(), "version": [1,0,0], "min_engine_version": [1,16,0] }, "modules": [{ "type": "skin_pack", "uuid": uuid(), "version": [1,0,0] }] };
-                    const skinsJson = { "skins": [{ "localization_name": "MiSkin4D", "geometry": "geometry.humanoid.custom", "texture": "skin.png", "type": "free" }], "geometry": "geometry.json", "serialize_name": "Skin4D", "localization_name": "Skin4D" };
+    
+    uploadArea.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'INPUT') fileInput.click();
+    });
+                // ===== GENERAR SKIN 4D =====
+        btnGenerate.addEventListener('click', function() {
+            if (!imageDataURL) { log('❌ Carga una skin primero.', 'error'); return; }
+            btnGenerate.disabled = true;
+            loader.style.display = 'block';
+            log('⏳ Generando modelo 4D personalizado...', 'info');
+            
+            setTimeout(() => {
+                try {
+                    // Construir geometry.json con los parámetros editados
+                    const bones = Object.keys(parts).map(key => {
+                        const p = parts[key];
+                        const cube = {
+                            origin: [-p.w/2, p.y - p.h/2, -p.d/2],
+                            size: [p.w * p.scale, p.h * p.scale, p.d * p.scale],
+                            uv: p.uv
+                        };
+                        if (p.inflate !== 0) cube.inflate = p.inflate;
+                        return { 
+                            name: key, 
+                            pivot: [p.x, p.y, p.z],
+                            cubes: [cube]
+                        };
+                    });
+                    
+                    const geometry = {
+                        "format_version": "1.16.0",
+                        "minecraft:geometry": [{
+                            "description": {
+                                "identifier": "geometry.humanoid.custom",
+                                "texture_width": 64,
+                                "texture_height": 64,
+                                "visible_bounds_width": 3,
+                                "visible_bounds_height": 3,
+                                "visible_bounds_offset": [0, 0.75, 0]
+                            },
+                            "bones": bones
+                        }]
+                    };
+                    
+                    const manifest = {
+                        "format_version": 2,
+                        "header": {
+                            "description": "Skin 4D personalizada",
+                            "name": "Skin 4D Editada",
+                            "uuid": uuid(),
+                            "version": [1, 0, 0],
+                            "min_engine_version": [1, 16, 0]
+                        },
+                        "modules": [{ "type": "skin_pack", "uuid": uuid(), "version": [1, 0, 0] }]
+                    };
+                    
+                    const skinsJson = {
+                        "skins": [{
+                            "localization_name": "MiSkin4D",
+                            "geometry": "geometry.humanoid.custom",
+                            "texture": "skin.png",
+                            "type": "free"
+                        }],
+                        "geometry": "geometry.json",
+                        "serialize_name": "Skin4D_Editada",
+                        "localization_name": "Skin4D_Editada"
+                    };
+                    
                     const zip = new JSZip();
                     zip.file("geometry.json", JSON.stringify(geometry, null, 2));
                     zip.file("manifest.json", JSON.stringify(manifest, null, 2));
                     zip.file("skins.json", JSON.stringify(skinsJson, null, 2));
+                    
+                    // Usar la imagen actual (con posibles modificaciones)
                     const byteString = atob(imageDataURL.split(',')[1]);
                     const ab = new ArrayBuffer(byteString.length);
                     const ia = new Uint8Array(ab);
                     for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
                     zip.file("skin.png", new Blob([ab], { type: 'image/png' }));
+                    
                     zip.generateAsync({ type: "blob" }).then(function(content) {
                         const nombre = selectedFile ? selectedFile.name.replace(/\.[^/.]+$/, "") : "skin4d";
                         const link = document.createElement('a');
@@ -129,20 +393,82 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        log('🎉 ¡Generada! Busca el .mcpack en tus descargas.', 'success');
+                        log('🎉 ¡Skin 4D generada con éxito!', 'success');
                         downloadHint.style.display = 'block';
                         btnGenerate.disabled = false;
                         loader.style.display = 'none';
                     });
-                } catch (e) { log(`❌ Error: ${e.message}`, 'error'); btnGenerate.disabled = false; loader.style.display = 'none'; }
-            }, 100);
+                } catch (e) {
+                    log(`❌ Error: ${e.message}`, 'error');
+                    btnGenerate.disabled = false;
+                    loader.style.display = 'none';
+                }
+            }, 200);
         });
-
+        
+        // ===== RESETEAR CONTROLES =====
+        btnResetAll.addEventListener('click', function() {
+            Object.keys(parts).forEach(key => {
+                const p = parts[key];
+                p.scale = 1;
+                p.inflate = key.includes('hat') || key.includes('jacket') || key.includes('sleeve') || key.includes('pants') ? 0.5 : 0;
+                p.y = 0;
+            });
+            // Actualizar sliders
+            document.querySelectorAll('.control-group input[type="range"]').forEach(input => {
+                const part = input.dataset.part;
+                const prop = input.dataset.prop;
+                const defaultVal = prop === 'scale' ? 1 : (prop === 'inflate' ? (part.includes('hat') || part.includes('jacket') || part.includes('sleeve') || part.includes('pants') ? 0.5 : 0) : 0);
+                input.value = defaultVal;
+                const label = document.getElementById(`${prop}_${part}`);
+                if (label) label.textContent = defaultVal.toFixed(prop === 'scale' ? 2 : 1);
+            });
+            renderPreview();
+            log('🔄 Todos los valores reseteados', 'info');
+        });
+        
+        // ===== APLICAR A TODAS =====
+        btnApplyAll.addEventListener('click', function() {
+            // Tomar valores de la primera parte (cabeza) y aplicarlos a todas
+            const head = parts.head;
+            Object.keys(parts).forEach(key => {
+                if (key === 'head') return;
+                const p = parts[key];
+                p.scale = head.scale;
+                p.inflate = head.inflate;
+                p.y = head.y;
+            });
+            // Actualizar sliders
+            document.querySelectorAll('.control-group input[type="range"]').forEach(input => {
+                const part = input.dataset.part;
+                const prop = input.dataset.prop;
+                const val = parts[part][prop];
+                input.value = val;
+                const label = document.getElementById(`${prop}_${part}`);
+                if (label) label.textContent = val.toFixed(prop === 'scale' ? 2 : 1);
+            });
+            renderPreview();
+            log('📌 Valores aplicados a todas las partes', 'success');
+        });
+        
+        // ===== REINICIAR APP =====
         btnReset.addEventListener('click', function() {
-            selectedFile = null; imageDataURL = null; fileInput.value = ''; previewImg.style.display = 'none'; placeholderText.style.display = 'block'; uploadArea.classList.remove('has-image'); fileInfo.textContent = 'Ningún archivo cargado'; btnGenerate.disabled = true; downloadHint.style.display = 'none'; loader.style.display = 'none'; log('✨ Reiniciado.', 'info');
+            selectedFile = null;
+            imageDataURL = null;
+            skinImage = null;
+            fileInput.value = '';
+            uploadArea.classList.remove('has-image');
+            fileInfo.textContent = 'Ninguna skin cargada';
+            btnGenerate.disabled = true;
+            downloadHint.style.display = 'none';
+            loader.style.display = 'none';
+            log('✨ App reiniciada. Carga una skin.', 'info');
+            renderPreview();
         });
-        uploadArea.addEventListener('click', function(e) { if (e.target.tagName !== 'INPUT') fileInput.click(); });
-        log('📱 Listo. Toca para cargar tu skin.', 'info');
+        
+        // ===== INICIALIZAR =====
+        renderPreview();
+        log('🎮 Listo. Carga tu skin y ajusta los parámetros.', 'info');
     })();
 </script>
 </body>
